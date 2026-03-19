@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flight Search</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 40px 24px;
+      background: #f0f2f5;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 32px;
+      font-size: 1.6rem;
+      color: #1d2129;
+    }
+
+    /* ── Search form ────────────────────────────────────────────────── */
+    .search-form {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px 28px;
+      max-width: 560px;
+      margin: 0 auto 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .search-form label {
+      display: block;
+      font-size: .85rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .search-form input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .search-form input:focus {
+      border-color: #1677ff;
+      box-shadow: 0 0 0 2px rgba(22,119,255,.15);
+    }
+
+    .search-form .field { }
+
+    .form-actions {
+      grid-column: 1 / -1;
+      text-align: right;
+      margin-top: 8px;
+    }
+
+    .search-btn {
+      padding: 10px 32px;
+      background: #1677ff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .search-btn:hover { background: #0958d9; }
+
+    /* ── Results ────────────────────────────────────────────────────── */
+    #results-section {
+      display: none;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    #results-section h2 {
+      font-size: 1rem;
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    ul[role="list"] {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Each list item is a flight card. aria-label="<FLIGHT_NUMBER>" is used
+       by the test's scopedRole strategy to find the correct row. */
+    ul[role="list"] li {
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+
+    .flight-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .flight-number {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: #1d2129;
+    }
+
+    .flight-route {
+      font-size: .9rem;
+      color: #555;
+    }
+
+    .flight-time {
+      font-size: .85rem;
+      color: #888;
+    }
+
+    .flight-right {
+      text-align: right;
+    }
+
+    .flight-price {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fa541c;
+      margin-bottom: 8px;
+    }
+
+    .book-btn {
+      padding: 8px 20px;
+      background: #1677ff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: .9rem;
+      cursor: pointer;
+    }
+
+    .book-btn:hover { background: #0958d9; }
+  </style>
+</head>
+<body>
+
+  <h1>✈ Flight Search</h1>
+
+  <!-- ── Search Form ──────────────────────────────────────────────────── -->
+  <form class="search-form" id="search-form" onsubmit="return false;">
+
+    <div class="field">
+      <label for="departure-input">Departure City</label>
+      <input
+        id="departure-input"
+        type="text"
+        name="departureCity"
+        data-testid="departure-city-input"
+        placeholder="Enter departure city"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="field">
+      <label for="arrival-input">Arrival City</label>
+      <input
+        id="arrival-input"
+        type="text"
+        name="arrivalCity"
+        data-testid="arrival-city-input"
+        placeholder="Enter arrival city"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="search-btn"
+        id="search-btn"
+        data-testid="search-flights-btn"
+      >
+        Search Flights
+      </button>
+    </div>
+
+  </form>
+
+  <!-- ── Results ──────────────────────────────────────────────────────── -->
+  <section id="results-section">
+    <h2 id="results-heading">Available Flights</h2>
+
+    <!--
+      role="list" is explicit so that Playwright's getByRole('list', { name: 'Flight results' })
+      can find it reliably (some CSS resets strip list semantics from <ul>).
+
+      aria-labelledby="results-heading" gives the list its accessible name.
+      We also add aria-label directly for belt-and-suspenders.
+    -->
+    <ul
+      role="list"
+      aria-label="Flight results"
+      id="flight-list"
+    >
+      <!-- Populated dynamically by the Search button handler below -->
+    </ul>
+  </section>
+
+  <script>
+    /**
+     * Static flight data for the demo.
+     * In a real app this would come from an API response.
+     *
+     * IMPORTANT for tests:
+     *   The 'id' field becomes the aria-label of the <li> element.
+     *   Playwright's getByRole('listitem', { name: 'MU5137' }) matches
+     *   via that aria-label, enabling the level-4 scopedRole strategy.
+     */
+    var FLIGHTS = [
+      {
+        id:       'MU5137',
+        from:     'Shanghai',
+        fromCode: 'PVG',
+        to:       'Beijing',
+        toCode:   'PEK',
+        dep:      '08:30',
+        arr:      '11:05',
+        price:    580
+      },
+      {
+        id:       'CZ6188',
+        from:     'Guangzhou',
+        fromCode: 'CAN',
+        to:       'Chengdu',
+        toCode:   'CTU',
+        dep:      '10:15',
+        arr:      '12:40',
+        price:    720
+      },
+      {
+        id:       'CA1234',
+        from:     'Beijing',
+        fromCode: 'PEK',
+        to:       'Shenzhen',
+        toCode:   'SZX',
+        dep:      '14:00',
+        arr:      '17:20',
+        price:    650
+      }
+    ];
+
+    document.getElementById('search-btn').addEventListener('click', function () {
+      var list = document.getElementById('flight-list');
+      list.innerHTML = '';
+
+      FLIGHTS.forEach(function (f) {
+        var li = document.createElement('li');
+
+        /*
+         * aria-label="<flight-number>" is critical for the test's scopedRole strategy:
+         *   page.getByRole('listitem', { name: 'MU5137' })
+         * Playwright uses the accessible name to disambiguate rows.
+         */
+        li.setAttribute('aria-label', f.id);
+
+        li.innerHTML = [
+          '<div class="flight-info">',
+          '  <span class="flight-number">' + f.id + '</span>',
+          '  <span class="flight-route">' + f.from + ' (' + f.fromCode + ')' +
+               ' &rarr; ' + f.to + ' (' + f.toCode + ')</span>',
+          '  <span class="flight-time">' + f.dep + ' &ndash; ' + f.arr + '</span>',
+          '</div>',
+          '<div class="flight-right">',
+          '  <div class="flight-price">&yen;' + f.price + '</div>',
+          '  <button class="book-btn">Book</button>',
+          '</div>'
+        ].join('\n');
+
+        // Clicking "Book" navigates to the order confirm page
+        li.querySelector('.book-btn').addEventListener('click', function () {
+          window.location.href = '/order/confirm';
+        });
+
+        list.appendChild(li);
+      });
+
+      document.getElementById('results-section').style.display = 'block';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Confirmation</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* ── Overlay backdrop ───────────────────────────────────────────── */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Dialog ─────────────────────────────────────────────────────── */
+    [role="dialog"] {
+      background: #fff;
+      border-radius: 8px;
+      padding: 32px;
+      width: 400px;
+      max-width: 90vw;
+      box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    }
+
+    [role="dialog"] h2 {
+      margin: 0 0 20px;
+      font-size: 1.25rem;
+    }
+
+    .payment-summary {
+      background: #f9f9f9;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .payment-summary p {
+      margin: 6px 0;
+      font-size: .95rem;
+    }
+
+    .amount {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fa541c;
+      margin-top: 12px !important;
+    }
+
+    /* ── Payment actions area ───────────────────────────────────────── */
+    .payment-dialog {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .payment-dialog button {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .cancel-btn {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .confirm-btn {
+      background: #52c41a;
+      color: #fff;
+    }
+
+    .confirm-btn:hover  { background: #389e0d; }
+    .cancel-btn:hover   { background: #bdbdbd; }
+
+    /* ── Success banner ─────────────────────────────────────────────── */
+    #success-banner {
+      display: none;
+      background: #fff;
+      border-radius: 8px;
+      padding: 48px 56px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    }
+
+    #success-banner .icon {
+      font-size: 3.5rem;
+      margin-bottom: 16px;
+    }
+
+    #success-banner p {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #389e0d;
+      margin: 0 0 8px;
+    }
+
+    #success-banner small {
+      font-size: .9rem;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Payment Confirmation Dialog ─────────────────────────────────── -->
+  <div id="overlay">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Payment Confirmation"
+      id="payment-dialog"
+    >
+      <h2>Payment Confirmation</h2>
+
+      <div class="payment-summary">
+        <p><strong>Order No:</strong> ORD-20260401-0042</p>
+        <p><strong>Flight:</strong> MU5137 &mdash; Shanghai → Beijing</p>
+        <p><strong>Passenger:</strong> Zhang Wei</p>
+        <p class="amount">Total: ¥ 580.00</p>
+      </div>
+
+      <div class="payment-dialog">
+        <button class="cancel-btn" id="cancel-payment-btn">
+          Cancel
+        </button>
+        <button
+          class="confirm-btn"
+          id="confirm-payment-btn"
+          data-testid="confirm-payment-btn"
+          title="Confirm Payment"
+        >
+          Confirm Payment
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Payment success message ──────────────────────────────────────── -->
+  <div id="success-banner">
+    <div class="icon">💳</div>
+    <p>Payment Successful</p>
+    <small>Your ticket has been issued. Check your email for the e-ticket.</small>
+  </div>
+
+  <script>
+    var overlay       = document.getElementById('overlay');
+    var successBanner = document.getElementById('success-banner');
+
+    // Confirm Payment → hide dialog, show success message
+    document.getElementById('confirm-payment-btn').addEventListener('click', function () {
+      overlay.style.display = 'none';
+      successBanner.style.display = 'block';
+    });
+
+    // Cancel → just close the dialog
+    document.getElementById('cancel-payment-btn').addEventListener('click', function () {
+      overlay.style.display = 'none';
+    });
+  </script>
+</body>
+</html>

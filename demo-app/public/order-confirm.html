@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Confirmation</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* ── Overlay backdrop ───────────────────────────────────────────── */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Dialog ─────────────────────────────────────────────────────── */
+    [role="dialog"] {
+      background: #fff;
+      border-radius: 8px;
+      padding: 32px;
+      width: 420px;
+      max-width: 90vw;
+      box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    }
+
+    [role="dialog"] h2 {
+      margin: 0 0 20px;
+      font-size: 1.25rem;
+    }
+
+    .order-details {
+      background: #f9f9f9;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .order-details p {
+      margin: 6px 0;
+      font-size: .95rem;
+    }
+
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .dialog-footer button {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .secondary-btn {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .primary-btn {
+      background: #1677ff;
+      color: #fff;
+    }
+
+    .primary-btn:hover { background: #0958d9; }
+    .secondary-btn:hover { background: #bdbdbd; }
+
+    /* ── Success banner ─────────────────────────────────────────────── */
+    #success-banner {
+      display: none;
+      background: #fff;
+      border-radius: 8px;
+      padding: 40px 48px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    }
+
+    #success-banner .checkmark {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    #success-banner p {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #389e0d;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Order Confirmation Dialog ───────────────────────────────────── -->
+  <div id="overlay">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Order Confirmation"
+      id="order-dialog"
+    >
+      <h2 id="dialog-title">Order Confirmation</h2>
+
+      <div class="order-details" role="group" aria-label="Order Details">
+        <p><strong>Flight:</strong> MU5137</p>
+        <p><strong>Route:</strong> Shanghai (PVG) → Beijing (PEK)</p>
+        <p><strong>Departure:</strong> 2026-04-01  08:30</p>
+        <p><strong>Passenger:</strong> Zhang Wei</p>
+        <p><strong>Total:</strong> ¥ 580.00</p>
+      </div>
+
+      <div class="dialog-footer">
+        <button
+          class="secondary-btn"
+          id="cancel-btn"
+          data-testid="cancel-order"
+          title="Cancel"
+        >
+          Cancel
+        </button>
+        <button
+          class="primary-btn"
+          id="submit-btn"
+          data-testid="submit-order"
+          title="Submit Order"
+        >
+          Submit Order
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Post-submission success message ─────────────────────────────── -->
+  <div id="success-banner">
+    <div class="checkmark">✓</div>
+    <p>Order submitted successfully</p>
+  </div>
+
+  <script>
+    const overlay    = document.getElementById('overlay');
+    const successBanner = document.getElementById('success-banner');
+
+    // Submit Order → hide dialog, show success banner
+    document.getElementById('submit-btn').addEventListener('click', function () {
+      overlay.style.display = 'none';
+      successBanner.style.display = 'block';
+    });
+
+    // Cancel → hide dialog entirely
+    document.getElementById('cancel-btn').addEventListener('click', function () {
+      overlay.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
