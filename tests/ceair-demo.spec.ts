@@ -72,6 +72,7 @@ test.describe('extractContracts - 东航官网 ceair.com 真实页面演示', ()
       for (const s of el.contract.strategies) {
         const uniqueFlag = s.unique ? '✅' : '❌';
         const detail = s.kind === 'role' ? `role="${s.role}" name="${s.name}"` 
+                     : s.kind === 'scopedRole' ? `container: ${(s as any).containerRole}["${(s as any).containerName}"] → target: ${(s as any).targetRole}["${(s as any).targetName}"]`
                      : 'value' in s ? `"${s.value}"` 
                      : JSON.stringify(s);
         console.log(`   L${s.level} ${s.kind.padEnd(12)} ${uniqueFlag} ${detail}`);
@@ -124,7 +125,13 @@ test.describe('extractContracts - 东航官网 ceair.com 真实页面演示', ()
       console.log(`按钮: "${btn.contract.name}"`);
       for (const s of btn.contract.strategies) {
         const flag = s.unique ? '✅唯一' : '❌非唯一';
-        console.log(`  L${s.level} ${s.kind}: ${flag}`);
+        // 对于 L4 scopedRole 策略，展示详细的容器和目标信息
+        if (s.kind === 'scopedRole') {
+          const scopedInfo = `container: ${(s as any).containerRole}["${(s as any).containerName}"] → target: ${(s as any).targetRole}["${(s as any).targetName}"]`;
+          console.log(`  L${s.level} ${s.kind}: ${flag} | ${scopedInfo}`);
+        } else {
+          console.log(`  L${s.level} ${s.kind}: ${flag}`);
+        }
       }
     }
 

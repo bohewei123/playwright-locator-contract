@@ -154,8 +154,9 @@ The extractor generates strategies following the same five-level hierarchy:
 | 2 | `title` | `title` attribute |
 | 2 | `alt` | `alt` attribute on images |
 | 3 | `text` | Visible text content (exact match for short text) |
+| 4 | `scopedRole` | Role inside nearest semantic container (`dialog`, `region`, `group`, `navigation`, etc.) — supports containers with or without `aria-label`, preferring named containers |
 | 5 | `css` | `#id` or `[data-testid="..."]` |
-| 5 | `xpath` | `//tag[@id='...']` |
+| 5 | `xpath` | `//tag[@id='...']` or attribute-combination XPath (at least 2 attributes: `type`, `name`, `placeholder`, `title`, `alt`)
 
 ### Manual vs. automatic: complementary approaches
 
@@ -181,7 +182,7 @@ Strategies are tried in ascending level order. The first strategy that matches *
 | 2 | `title` | `title` attribute | Medium-high |
 | 2 | `alt` | `alt` attribute on images | Medium-high |
 | 3 | `text` | Visible text content | Medium |
-| 4 | `scopedRole` | Role inside a **named** container (`aria-label`) | Medium |
+| 4 | `scopedRole` | Role inside nearest semantic container (`dialog`, `region`, `group`, `navigation`, etc.) — supports containers with or without `aria-label`, preferring named containers | Medium |
 | 4 | `filterHasText` | Role inside a container found by the **text it contains** | Medium |
 | 5 | `css` | CSS selector | Low (fallback) |
 | 5 | `xpath` | XPath expression | Low (fallback) |
@@ -372,7 +373,7 @@ interface ExtractedElement {
   role?: string;                  // Computed ARIA role
   name?: string;                  // Accessible name
   text?: string;                  // Visible text content (truncated)
-  attributes: ElementAttributes;  // { id?, testId?, ariaLabel?, placeholder?, title?, alt? }
+  attributes: ElementAttributes;  // { id?, testId?, ariaLabel?, placeholder?, title?, alt?, inputType? }
   bbox?: BoundingBox;             // { x, y, width, height }
   contract: LocatorContract;      // Auto-generated contract with strategies
 }
@@ -415,6 +416,7 @@ interface ElementAttributes {
   placeholder?: string;
   title?: string;
   alt?: string;
+  inputType?: string;  // For input elements (e.g., 'text', 'checkbox', 'radio')
 }
 ```
 
@@ -483,17 +485,41 @@ const bookBtn = await findLocator(page, bookFlightContract('MU5137'));
 await bookBtn.click();
 ```
 
-Use `scopedRole` instead when the container has an explicit accessible name (`aria-label` / `aria-labelledby`), for example a named `dialog`, `region`, or `group`:
+Use `scopedRole` when the element is inside a semantic container. The extractor automatically detects the nearest container (e.g., `dialog`, `region`, `group`, `navigation`) and generates a chain strategy:
 
 ```typescript
+// Container WITH aria-label (higher precision)
 {
   level: 4,
   kind: 'scopedRole',
-  containerRole: 'group',
-  containerName: 'Order Details',   // container must have aria-label="Order Details"
+  containerRole: 'dialog',
+  containerName: 'Confirm',         // container has aria-label="Confirm"
   targetRole: 'button',
-  targetName: 'Submit Order',
+  targetName: 'OK',
 }
+// Playwright equivalent:
+// page.getByRole('dialog', { name: 'Confirm' }).getByRole('button', { name: 'OK' })
+
+// Container WITHOUT aria-label (fallback)
+{
+  level: 4,
+  kind: 'scopedRole',
+  containerRole: 'radiogroup',
+  // containerName is undefined
+  targetRole: 'radio',
+  targetName: '单程',
+}
+// Playwright equivalent:
+// page.getByRole('radiogroup').getByRole('radio', { name: '单程' })
+```
+
+**Level 5 attribute-combination XPath:**
+
+For elements with multiple attributes (`type`, `name`, `placeholder`, `title`, `alt`), the extractor generates a combined XPath (only when at least 2 attributes are present):
+
+```typescript
+// Example: input with type, name, and placeholder
+{ level: 5, kind: 'xpath', value: "//input[@type='text'][@name='city'][@placeholder='Enter city']" }
 ```
 
 ### Verbose debugging

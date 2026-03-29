@@ -158,6 +158,7 @@ async function collectElements(
         text: string;
         bbox: { x: number; y: number; width: number; height: number } | null;
         ancestors: Array<{ role: string; name: string; tag: string }>;
+        inputType: string;
       }> = [];
 
       elements.forEach((el) => {
@@ -223,6 +224,7 @@ async function collectElements(
             height: rect.height,
           },
           ancestors,
+          inputType: (htmlEl as HTMLInputElement).type || '',
         });
       });
 
@@ -276,6 +278,49 @@ function buildStrategies(raw: RawElementData): StrategyDef[] {
     strategies.push({ level: 3, kind: 'text', value: raw.text, exact: raw.text.length < 20 });
   }
 
+  // Level 4: scopedRole — nearest semantic ancestor (with or without name)
+  if (raw.role && raw.ancestors) {
+    const targetName = raw.ariaLabel || raw.text || raw.name;
+    if (targetName) {
+      // Pass 1: prefer ancestor with name (higher precision)
+      for (const ancestor of raw.ancestors) {
+        if (ancestor.role && ancestor.name) {
+          strategies.push({
+            level: 4,
+            kind: 'scopedRole',
+            containerRole: ancestor.role,
+            containerName: ancestor.name,
+            targetRole: raw.role,
+            targetName,
+          });
+          break;
+        }
+      }
+      // Pass 2: nearest ancestor with role only (no name), if different from Pass 1
+      for (const ancestor of raw.ancestors) {
+        if (ancestor.role) {
+          // Skip if this is the same ancestor already added in Pass 1
+          const alreadyAdded = strategies.some(
+            s => s.level === 4 && s.kind === 'scopedRole'
+              && (s as any).containerRole === ancestor.role
+              && (s as any).containerName === ancestor.name
+          );
+          if (!alreadyAdded) {
+            strategies.push({
+              level: 4,
+              kind: 'scopedRole',
+              containerRole: ancestor.role,
+              containerName: undefined,
+              targetRole: raw.role,
+              targetName,
+            });
+            break;
+          }
+        }
+      }
+    }
+  }
+
   // Level 5: css with #id
   if (raw.id) {
     strategies.push({ level: 5, kind: 'css', value: `#${raw.id}` });
@@ -289,6 +334,24 @@ function buildStrategies(raw: RawElementData): StrategyDef[] {
   // Level 5: xpath with id
   if (raw.id) {
     strategies.push({ level: 5, kind: 'xpath', value: `//${raw.tag}[@id='${raw.id}']` });
+  }
+
+  // Level 5: attribute-combination XPath (for elements without id/testId)
+  {
+    const attrs: string[] = [];
+    if (raw.tag === 'input' && raw.inputType) {
+      attrs.push(`@type='${raw.inputType}'`);
+    }
+    if (raw.name) attrs.push(`@name='${raw.name}'`);
+    if (raw.placeholder) attrs.push(`@placeholder='${raw.placeholder}'`);
+    if (raw.title) attrs.push(`@title='${raw.title}'`);
+    if (raw.alt) attrs.push(`@alt='${raw.alt}'`);
+
+    // Generate only if at least 2 attributes (single-attr xpath has low added value)
+    if (attrs.length >= 2) {
+      const xpathAttrs = attrs.map(a => `[${a}]`).join('');
+      strategies.push({ level: 5, kind: 'xpath', value: `//${raw.tag}${xpathAttrs}` });
+    }
   }
 
   return strategies;

@@ -377,4 +377,5 @@ export interface RawElementData {
   text: string;
   bbox: BoundingBox | null;
   ancestors: AncestorInfo[];
+  inputType: string;
 }
