@@ -17,6 +17,12 @@ export { resolveLocator } from './locator-contract';
 //   await btn.click();
 export { findLocator } from './locator-contract';
 
+// Export buildCandidate for strategy-level locator construction
+export { buildCandidate } from './locator-contract';
+
+// Export extractContracts for DOM element extraction
+export { extractContracts } from './extractor';
+
 // All type definitions
 export type {
   Root,
@@ -30,6 +36,10 @@ export type {
   LocatorContract,
   ResolveOptions,
   ResolveResult,
+  ExtractedElement,
+  ExtractOptions,
+  ElementAttributes,
+  BoundingBox,
 } from './types';
 
 // Example contracts (consumers can use these as templates or import directly)

@@ -88,6 +88,86 @@ The test reads like a business action. The contract captures the locating logic.
 
 ---
 
+## DOM auto-extraction with `extractContracts`
+
+In addition to manually defining contracts, you can **automatically extract** locator contracts from any page. This is useful for:
+
+- **Rapid scanning**: Quickly inventory all interactive elements on a page
+- **Bulk contract generation**: Generate base contracts to refine and check into version control
+- **Exploratory testing**: Understand what elements are available before writing tests
+
+### Usage
+
+```typescript
+import { extractContracts } from 'playwright-locator-contract';
+
+// Automatically scan the page and extract contracts for all interactive elements
+const elements = await extractContracts(page);
+
+for (const el of elements) {
+  console.log(el.contract.name, el.contract.strategies);
+}
+```
+
+Each `ExtractedElement` contains:
+
+- `tag`: HTML tag name
+- `role`: Computed ARIA role
+- `name` / `text`: Accessible name and visible text
+- `attributes`: Collected HTML/ARIA attributes (`id`, `testId`, `ariaLabel`, etc.)
+- `bbox`: Bounding box position and dimensions
+- `contract`: Auto-generated `LocatorContract` with multi-strategy definitions
+
+### Extraction options
+
+```typescript
+interface ExtractOptions {
+  /** Custom CSS selector to override the default interactive element selector */
+  selector?: string;
+  /** Whether to include hidden elements (default: false) */
+  includeHidden?: boolean;
+  /** Whether to validate uniqueness for each strategy via count() (default: true) */
+  validateUniqueness?: boolean;
+}
+```
+
+Example with options:
+
+```typescript
+const elements = await extractContracts(page, {
+  selector: 'button, a',        // Only extract buttons and links
+  includeHidden: true,          // Include invisible elements
+  validateUniqueness: false,    // Skip uniqueness validation (faster)
+});
+```
+
+### Auto-generated strategy hierarchy
+
+The extractor generates strategies following the same five-level hierarchy:
+
+| Level | Strategy | Source |
+|-------|----------|--------|
+| 1 | `role` + name | ARIA role with `aria-label`, text content, or `name` attribute |
+| 1 | `testId` | `data-testid` attribute |
+| 2 | `label` | `aria-label` attribute |
+| 2 | `placeholder` | `placeholder` attribute |
+| 2 | `title` | `title` attribute |
+| 2 | `alt` | `alt` attribute on images |
+| 3 | `text` | Visible text content (exact match for short text) |
+| 5 | `css` | `#id` or `[data-testid="..."]` |
+| 5 | `xpath` | `//tag[@id='...']` |
+
+### Manual vs. automatic: complementary approaches
+
+| Approach | Use when | Benefits |
+|----------|----------|----------|
+| **Manual contracts** | You need precise control over scoping, naming, and strategy ordering | Explicit intent, stable over time, self-documenting |
+| **Auto-extraction** | Rapid prototyping, bulk scanning, or generating starter contracts | Fast, comprehensive, discovers elements you might miss |
+
+A typical workflow: use `extractContracts` to discover elements, then curate and refine the generated contracts into version-controlled contract files.
+
+---
+
 ## The five-level strategy hierarchy
 
 Strategies are tried in ascending level order. The first strategy that matches **exactly one visible element** wins.
@@ -237,6 +317,109 @@ interface ResolveOptions {
 
 ---
 
+### `extractContracts(page, options?)`
+
+Automatically extracts interactive and semantic elements from a page and generates multi-strategy `LocatorContract`s for each element.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `page` | `Page` | The Playwright page to extract from |
+| `options` | `ExtractOptions` | Optional: `selector`, `includeHidden`, `validateUniqueness` |
+
+**Returns:** `Promise<ExtractedElement[]>`
+
+```typescript
+const elements = await extractContracts(page);
+for (const el of elements) {
+  const locator = await findLocator(page, el.contract);
+  // Use the locator...
+}
+```
+
+---
+
+### `buildCandidate(root, strategy)`
+
+Builds a Playwright `Locator` from a single `StrategyDef`. This is a lower-level API used internally by the resolver, exposed for advanced use cases where you need direct control over individual strategies.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `root` | `Page \| Locator \| FrameLocator` | The root context to search within |
+| `strategy` | `StrategyDef` | A single strategy definition |
+
+**Returns:** `Locator`
+
+```typescript
+import { buildCandidate } from 'playwright-locator-contract';
+
+const locator = buildCandidate(page, { level: 1, kind: 'role', role: 'button', name: 'Submit' });
+await locator.click();
+```
+
+---
+
+### `ExtractedElement`
+
+An element extracted from the page DOM, including its auto-generated locator contract.
+
+```typescript
+interface ExtractedElement {
+  tag: string;                    // HTML tag name (lowercase)
+  role?: string;                  // Computed ARIA role
+  name?: string;                  // Accessible name
+  text?: string;                  // Visible text content (truncated)
+  attributes: ElementAttributes;  // { id?, testId?, ariaLabel?, placeholder?, title?, alt? }
+  bbox?: BoundingBox;             // { x, y, width, height }
+  contract: LocatorContract;      // Auto-generated contract with strategies
+}
+```
+
+---
+
+### `ExtractOptions`
+
+```typescript
+interface ExtractOptions {
+  selector?: string;           // Custom CSS selector (overrides default)
+  includeHidden?: boolean;     // Include hidden elements (default: false)
+  validateUniqueness?: boolean; // Validate strategy uniqueness (default: true)
+}
+```
+
+---
+
+### `BoundingBox`
+
+```typescript
+interface BoundingBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+```
+
+---
+
+### `ElementAttributes`
+
+```typescript
+interface ElementAttributes {
+  id?: string;
+  testId?: string;
+  ariaLabel?: string;
+  placeholder?: string;
+  title?: string;
+  alt?: string;
+}
+```
+
+---
+
 ## Recipes
 
 ### Scoping to a dialog
@@ -332,6 +515,7 @@ playwright-locator-contract/
 ├── src/
 │   ├── types.ts              # All TypeScript type definitions
 │   ├── locator-contract.ts   # Core findLocator / resolveLocator implementation
+│   ├── extractor.ts          # DOM auto-extraction (extractContracts)
 │   ├── contracts.ts          # Example LocatorContract definitions
 │   └── index.ts              # Public API entry point
 ├── tests/

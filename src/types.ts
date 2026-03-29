@@ -69,12 +69,14 @@ export type Level1Strategy =
       kind: 'role';
       role: string;
       name: string | RegExp;
+      unique?: boolean;
     }
   | {
       level: 1;
       /** Locate by data-testid — treated as a parallel primary channel */
       kind: 'testId';
       value: string;
+      unique?: boolean;
     };
 
 /**
@@ -83,10 +85,10 @@ export type Level1Strategy =
  * Still very user-facing, but more specific to element type.
  */
 export type Level2Strategy =
-  | { level: 2; kind: 'label'; value: string | RegExp }
-  | { level: 2; kind: 'placeholder'; value: string | RegExp }
-  | { level: 2; kind: 'title'; value: string | RegExp }
-  | { level: 2; kind: 'alt'; value: string | RegExp };
+  | { level: 2; kind: 'label'; value: string | RegExp; unique?: boolean }
+  | { level: 2; kind: 'placeholder'; value: string | RegExp; unique?: boolean }
+  | { level: 2; kind: 'title'; value: string | RegExp; unique?: boolean }
+  | { level: 2; kind: 'alt'; value: string | RegExp; unique?: boolean };
 
 /**
  * Level 3 — Visible text.
@@ -99,6 +101,7 @@ export type Level3Strategy = {
   value: string | RegExp;
   /** Whether to require an exact full-string match (default: false) */
   exact?: boolean;
+  unique?: boolean;
 };
 
 /**
@@ -132,6 +135,7 @@ export type Level4Strategy =
       targetRole: string;
       /** The accessible name of the target element */
       targetName: string | RegExp;
+      unique?: boolean;
     }
   | {
       level: 4;
@@ -151,6 +155,7 @@ export type Level4Strategy =
       targetRole: string;
       /** The accessible name of the target element */
       targetName: string | RegExp;
+      unique?: boolean;
     };
 
 /**
@@ -164,12 +169,14 @@ export type Level5Strategy =
       /** CSS selector */
       kind: 'css';
       value: string;
+      unique?: boolean;
     }
   | {
       level: 5;
       /** XPath expression */
       kind: 'xpath';
       value: string;
+      unique?: boolean;
     };
 
 /**
@@ -280,4 +287,80 @@ export interface ResolveResult {
    * Lower is better (level 1 = most user-facing).
    */
   level: 1 | 2 | 3 | 4 | 5;
+}
+
+// ---------------------------------------------------------------------------
+// DOM extraction types
+// ---------------------------------------------------------------------------
+
+/**
+ * Bounding box of an element on the page.
+ */
+export interface BoundingBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Relevant HTML/ARIA attributes collected from a DOM element.
+ */
+export interface ElementAttributes {
+  id?: string;
+  testId?: string;
+  ariaLabel?: string;
+  placeholder?: string;
+  title?: string;
+  alt?: string;
+}
+
+/**
+ * An element extracted from the page DOM, including its auto-generated
+ * locator contract with multi-strategy definitions.
+ */
+export interface ExtractedElement {
+  /** HTML tag name (lowercase) */
+  tag: string;
+  /** Computed ARIA role */
+  role?: string;
+  /** Accessible name */
+  name?: string;
+  /** Visible text content (truncated) */
+  text?: string;
+  /** Collected HTML/ARIA attributes */
+  attributes: ElementAttributes;
+  /** Element bounding box */
+  bbox?: BoundingBox;
+  /** Auto-generated locator contract */
+  contract: LocatorContract;
+}
+
+/**
+ * Options for the `extractContracts` function.
+ */
+export interface ExtractOptions {
+  /** Custom CSS selector to override the default interactive element selector */
+  selector?: string;
+  /** Whether to include hidden elements (default: false) */
+  includeHidden?: boolean;
+  /** Whether to validate uniqueness for each strategy via count() (default: true) */
+  validateUniqueness?: boolean;
+}
+
+/**
+ * Raw element data returned by page.evaluate() (internal type).
+ */
+export interface RawElementData {
+  tag: string;
+  role: string;
+  id: string;
+  name: string;
+  ariaLabel: string;
+  placeholder: string;
+  title: string;
+  alt: string;
+  testId: string;
+  text: string;
+  bbox: BoundingBox | null;
 }

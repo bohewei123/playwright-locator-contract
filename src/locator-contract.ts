@@ -63,7 +63,7 @@ function applyScope(root: Root, scope: ScopeDef): Root {
  *
  * @internal
  */
-function buildCandidate(root: Root, strategy: StrategyDef): Locator {
+export function buildCandidate(root: Root, strategy: StrategyDef): Locator {
   const r = root as Page; // Page, Locator, and FrameLocator share the same locator API shape
 
   switch (strategy.kind) {
