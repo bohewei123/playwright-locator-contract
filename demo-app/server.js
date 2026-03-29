@@ -63,10 +63,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 3. Root / → redirect to flights search as a convenience
+  // 3. Root / → serve flights search page directly (also acts as health check)
   if (urlPath === '/') {
-    res.writeHead(302, { Location: '/flights/search' });
-    res.end();
+    serveHtml(res, 'flights-search.html');
     return;
   }
 

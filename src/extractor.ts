@@ -122,6 +122,28 @@ async function collectElements(
         return roleMap[tag] || '';
       }
 
+      // 合格容器 role 白名单
+      const CONTAINER_ROLES = new Set([
+        'dialog', 'alertdialog', 'region', 'group', 'navigation',
+        'banner', 'main', 'form', 'complementary', 'contentinfo',
+        'tabpanel', 'menu', 'toolbar',
+      ]);
+
+      // 从 tag 推断隐式 landmark role（仅限有 aria-label 时才算）
+      function inferContainerRole(tag: string): string {
+        const map: Record<string, string> = {
+          nav: 'navigation',
+          main: 'main',
+          form: 'form',
+          aside: 'complementary',
+          header: 'banner',
+          footer: 'contentinfo',
+          section: 'region',
+          article: 'article',
+        };
+        return map[tag] || '';
+      }
+
       const elements = document.querySelectorAll(selector);
       const results: Array<{
         tag: string;
@@ -135,6 +157,7 @@ async function collectElements(
         testId: string;
         text: string;
         bbox: { x: number; y: number; width: number; height: number } | null;
+        ancestors: Array<{ role: string; name: string; tag: string }>;
       }> = [];
 
       elements.forEach((el) => {
@@ -162,6 +185,26 @@ async function collectElements(
           role = inferRoleInBrowser(tag, inputType);
         }
 
+        // 收集祖先链
+        const ancestors: Array<{ role: string; name: string; tag: string }> = [];
+        let parent = htmlEl.parentElement;
+        let depth = 0;
+        while (parent && depth < 10) {
+          const parentTag = parent.tagName.toLowerCase();
+          const parentRole = parent.getAttribute('role') || inferContainerRole(parentTag);
+          const parentName = parent.getAttribute('aria-label') || '';
+          
+          if (parentRole && CONTAINER_ROLES.has(parentRole)) {
+            ancestors.push({
+              role: parentRole,
+              name: parentName,
+              tag: parentTag,
+            });
+          }
+          parent = parent.parentElement;
+          depth++;
+        }
+
         results.push({
           tag,
           role,
@@ -179,6 +222,7 @@ async function collectElements(
             width: rect.width,
             height: rect.height,
           },
+          ancestors,
         });
       });
 

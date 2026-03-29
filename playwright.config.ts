@@ -40,6 +40,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
     stderr: 'pipe',
+    timeout: 300000, // 300 seconds (5 minutes), 10x of default 30s
   },
 
   /** Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */

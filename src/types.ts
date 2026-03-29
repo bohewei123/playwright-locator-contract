@@ -294,6 +294,19 @@ export interface ResolveResult {
 // ---------------------------------------------------------------------------
 
 /**
+ * Ancestor element info collected from the DOM tree.
+ * Used for Level 4 scopedRole strategy generation.
+ */
+export interface AncestorInfo {
+  /** Semantic ARIA role of the ancestor */
+  role: string;
+  /** Accessible name (aria-label) of the ancestor */
+  name: string;
+  /** HTML tag name (lowercase) */
+  tag: string;
+}
+
+/**
  * Bounding box of an element on the page.
  */
 export interface BoundingBox {
@@ -363,4 +376,5 @@ export interface RawElementData {
   testId: string;
   text: string;
   bbox: BoundingBox | null;
+  ancestors: AncestorInfo[];
 }
