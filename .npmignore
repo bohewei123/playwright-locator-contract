@@ -1,0 +1,31 @@
+# Test files
+tests/
+test-results/
+playwright-report/
+playwright.config.ts
+
+# Demo application
+demo-app/
+
+# Source maps (optional: keep if you want debugging support)
+# dist/**/*.map
+
+# Development configs
+.gitignore
+.eslintrc*
+.prettierrc*
+*.tsbuildinfo
+tsconfig.json
+
+# Articles and docs (not needed for package consumers)
+article.md
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

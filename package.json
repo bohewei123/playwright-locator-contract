@@ -4,8 +4,22 @@
   "description": "A resilient, layered locator strategy system for Playwright — treat locators as structured contracts, not selector strings.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "serve": "node demo-app/server.js",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
@@ -21,10 +35,21 @@
     "e2e",
     "automation",
     "resilient",
-    "typescript"
+    "typescript",
+    "contract",
+    "selector",
+    "test-automation"
   ],
   "author": "",
   "license": "MIT",
+  "peerDependencies": {
+    "@playwright/test": ">=1.30.0"
+  },
+  "peerDependenciesMeta": {
+    "@playwright/test": {
+      "optional": false
+    }
+  },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
     "@types/node": "^20.0.0",
@@ -32,5 +57,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
